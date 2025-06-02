@@ -1,0 +1,1525 @@
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مطاعم جيدا - لوحة التحكم</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  <style>
+    /* Custom scrollbar for the left sidebar and orders grid */
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: #d1d5db;
+      border-radius: 3px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      #printableReceipt,
+      #printableReceipt * {
+        visibility: visible;
+      }
+
+      #printableReceipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 400px;
+        max-width: 100%;
+        background: #fff;
+        color: #000;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 25px 30px;
+        box-sizing: border-box;
+        border: 1px solid #e75a2f;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+        direction: rtl;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      #printableReceipt h2 {
+        margin-bottom: 15px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #e75a2f;
+        text-align: center;
+        letter-spacing: 1.5px;
+      }
+
+      #printableReceipt .receipt-header {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #555;
+        font-weight: 600;
+      }
+
+      #printableReceipt table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+
+      #printableReceipt thead tr {
+        border-bottom: 2px solid #e75a2f;
+      }
+
+      #printableReceipt thead th {
+        padding: 8px 6px;
+        font-weight: 700;
+        color: #130501;
+        text-align: center;
+        font-size: 13px;
+      }
+
+      #printableReceipt tbody tr {
+        border-bottom: 2px solid #070000;
+        border-top: 2px solid #070000;
+      }
+
+      #printableReceipt tbody td {
+        padding: 8px 6px;
+        font-size: 13px;
+        color: #333;
+        text-align: center;
+        border: 2px solid #e75;
+      }
+
+      #printableReceipt tbody td:first-child {
+        text-align: right;
+        font-weight: 600;
+        color: #000;
+      }
+
+      #printableReceipt .total-row td {
+        border-top: 2px solid #e75a2f;
+        font-weight: 700;
+        font-size: 16px;
+        color: #e75a2f;
+        padding-top: 12px;
+      }
+
+      #printableReceipt .footer-text {
+        text-align: center;
+        font-size: 12px;
+        color: #777;
+        margin-top: 25px;
+        font-style: italic;
+        letter-spacing: 0.5px;
+      }
+
+      /* Print styles for order print area */
+      #printArea,
+      #printArea * {
+        visibility: visible;
+      }
+
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 1rem;
+        background: white;
+        font-family: Arial, sans-serif;
+        direction: rtl;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-[#2f2f2f] font-sans min-h-screen flex flex-col">
+
+  <!-- Login Page -->
+  <div id="loginPage" class="flex flex-col items-center justify-center flex-1 bg-[#1a1a1a] p-6">
+    <div class="bg-[#e75a2f] rounded-lg shadow-lg max-w-md w-full p-8">
+      <h1 class="text-white text-3xl font-bold mb-6 text-center">تسجيل الدخول</h1>
+      <form id="loginForm" class="flex flex-col space-y-4">
+        <input type="text" id="username" placeholder="اسم المستخدم" required
+          class="px-4 py-3 rounded focus:outline-none focus:ring-2 focus:ring-white text-black" />
+        <input type="password" id="password" placeholder="كلمة المرور" required
+          class="px-4 py-3 rounded focus:outline-none focus:ring-2 focus:ring-white text-black" />
+        <button type="submit"
+          class="bg-white text-[#e75a2f] font-bold py-3 rounded hover:bg-gray-100 transition">دخول</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App Container (hidden initially) -->
+  <div id="appContainer" class="hidden flex-1 flex flex-col max-w-[1200px] mx-auto mt-6 mb-6 rounded-lg overflow-hidden shadow-lg bg-[#1a1a1a]">
+
+    <div class="flex flex-col md:flex-row h-[700px] flex-1 overflow-hidden rounded-lg">
+
+      <!-- Left Sidebar: طلباتك الحالية -->
+      <div class="w-full md:w-1/3 bg-[#1a1a1a] flex flex-col border-r border-[#444]">
+        <div class="bg-[#e75a2f] flex items-center justify-between px-4 py-2">
+          <h1 class="text-white font-bold text-lg">طلباتك الحالية</h1>
+          <button aria-label="إغلاق" class="text-white text-xl" id="closeCurrentOrdersBtn"><i
+              class="fas fa-times"></i></button>
+        </div>
+        <div id="orderList" class="flex-1 overflow-y-auto scrollbar-thin px-4 py-3 space-y-4"></div>
+        <div class="bg-[#1a1a1a] border-t border-[#444] px-4 py-3">
+          <label for="customerName" class="block text-white font-semibold mb-1">اسم العميل</label>
+          <input id="customerName" type="text" placeholder="أدخل اسم العميل"
+            class="w-full mb-3 px-3 py-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#e75a2f] text-black" />
+          <div class="flex justify-between items-center text-white font-semibold text-lg mb-3">
+            <span>المجموع</span>
+            <span id="totalPrice">0.00 ر.س</span>
+          </div>
+          <button id="checkoutBtn"
+            class="w-full bg-[#e75a2f] text-white font-bold py-2 rounded hover:bg-[#cc4f29] transition disabled:opacity-50"
+            disabled>إتمام عملية الدفع</button>
+          <button id="openInvoicesPageBtn"
+            class="mt-3 w-full bg-[#444] text-white font-semibold py-2 rounded hover:bg-[#666] transition flex items-center justify-center space-x-2 rtl:space-x-reverse">
+            <span>السجل</span> <i class="fas fa-external-link-alt"></i>
+          </button>
+          <button id="clearInvoicesBtn"
+            class="mt-2 w-full bg-[#a22] text-white font-semibold py-2 rounded hover:bg-[#c33] transition flex items-center justify-center space-x-2 rtl:space-x-reverse">
+            <span>حذف السجل</span> <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Content: قسم الطلبات وقائمة الطلبات -->
+      <div class="flex-1 flex flex-col bg-[#f9f9f9] rounded-r-lg overflow-hidden">
+
+        <!-- Top Tabs to switch between "طلباتك الحالية" and "قائمة الطلبات" -->
+        <div class="flex border-b border-gray-300 bg-white">
+          <button id="tabCurrentOrders"
+            class="flex-1 py-3 text-center font-semibold text-[#e75a2f] border-b-4 border-[#e75a2f] focus:outline-none">طلباتك
+            الحالية</button>
+          <button id="tabOrdersList"
+            class="flex-1 py-3 text-center font-semibold text-gray-600 hover:text-[#e75a2f] focus:outline-none">قائمة
+            الطلبات</button>
+        </div>
+
+        <!-- Current Orders Section (same as left sidebar but bigger on mobile) -->
+        <div id="currentOrdersSection" class="flex flex-col flex-1 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 border-b border-gray-300 bg-white">
+            <div class="flex items-center space-x-2 rtl:space-x-reverse">
+              <i class="fas fa-utensils text-[#e75a2f] text-xl"></i>
+              <h2 class="text-[#e75a2f] font-bold text-lg">الأحلام</h2>
+            </div>
+            <div class="flex items-center space-x-2 rtl:space-x-reverse">
+              <input id="searchInput"
+                class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#e75a2f]"
+                placeholder="ابحث عن منتج" type="text" />
+              <button aria-label="بحث" class="text-gray-600 hover:text-[#e75a2f]" id="searchBtn"><i
+                  class="fas fa-search"></i></button>
+            </div>
+          </div>
+          <nav id="categoryNav"
+            class="flex space-x-2 rtl:space-x-reverse overflow-x-auto text-xs border-b border-gray-300 px-4 py-1 bg-white">
+            <a href="#" data-category="favorites"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">اكلات شرقية </a>
+            <a href="#" data-category="kodrat"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">وجبات سريعة</a>
+            <a href="#" data-category="buffets"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">بيتزا</a>
+            <a href="#" data-category="drinks"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">المشروبات الباردة</a>
+            <a href="#" data-category="softdrinks"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">المشروبات الساخنة</a>
+            <a href="#" data-category="mainDishes"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">أطباق رئيسية</a>
+            <a href="#" data-category="snacks"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">وجبات خفيفة</a>
+            <a href="#" data-category="desserts"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">حلويات</a>
+            <a href="#" data-category="kidsMeals"
+              class="whitespace-nowrap text-gray-600 hover:text-[#e75a2f] font-semibold">سندوتشات</a>
+          </nav>
+          <div id="productsContainer" class="flex flex-wrap p-4 gap-4 overflow-y-auto scrollbar-thin"
+            style="background-color:#f9f9f9; flex:1; min-height:0;">
+            <!-- Products will be rendered here -->
+          </div>
+        </div>
+
+        <!-- Orders List Section -->
+        <div id="ordersListSection" class="hidden flex flex-col flex-1 overflow-hidden bg-black rounded-b-lg p-4">
+          <!-- الجزء العلوي: عرض الطلب الأقدم حسب رقم الطلب -->
+          <div
+            class="w-full max-w-full bg-white bg-opacity-90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-300 p-3 mb-6"
+            style="font-family: Arial, sans-serif;">
+            <div class="flex justify-between items-center mb-1">
+              <div class="flex items-center space-x-2 rtl:space-x-reverse" id="orderStatusContainer">
+              </div>
+              <div class="text-xs text-gray-500" id="orderTimeDate">--:-- --/--/--</div>
+              <div class="flex space-x-2 rtl:space-x-reverse">
+                <button aria-label="إخفاء"
+                  class="bg-orange-600 hover:bg-orange-700 text-white rounded px-2 py-1 text-xs flex items-center justify-center"
+                  onclick="hideOldestOrder()">
+                  <i class="fas fa-eye-slash"></i>
+                </button>
+                <button aria-label="طباعة"
+                  class="bg-orange-600 hover:bg-orange-700 text-white rounded px-2 py-1 text-xs flex items-center justify-center"
+                  onclick="printOldestOrder()">
+                  <i class="fas fa-print"></i>
+                </button>
+              </div>
+            </div>
+            <div class="text-xs text-gray-600 font-semibold mb-0.5" id="orderStatusText">ASAP</div>
+            <div class="text-sm font-bold text-gray-900 mb-0.5" id="orderTable">Table#?</div>
+            <div class="text-sm font-semibold text-gray-800 mb-0.5" id="orderItems">اسم الخدمة: -</div>
+            <div class="text-xs text-gray-600 font-semibold mb-0.5" id="orderNumber">رقم الطلب: -</div>
+            <div class="text-xs text-gray-500">Terminal</div>
+          </div>
+
+          <!-- Main device screen -->
+          <div
+            class="w-full max-w-full bg-black rounded-lg shadow-lg p-4 flex flex-col flex-1 overflow-hidden"
+            style="font-family: Arial, sans-serif;">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-white font-bold text-lg">قائمة الطلبات</h2>
+              <div class="flex space-x-2 rtl:space-x-reverse">
+                <button id="openHistoryBtn"
+                  class="bg-purple-600 hover:bg-purple-700 text-white rounded px-3 py-1 text-sm flex items-center space-x-2 rtl:space-x-reverse"
+                  aria-label="فتح سجل الطلبات" onclick="openHistoryModal()">
+                  <i class="fas fa-history"></i>
+                  <span>سجل الطلبات</span>
+                </button>
+                <button id="addTableBtn"
+                  class="bg-green-600 hover:bg-green-700 text-white rounded px-3 py-1 text-sm flex items-center space-x-2 rtl:space-x-reverse"
+                  onclick="openAddOrderModal()" aria-label="إضافة طلب ترابيزة جديدة">
+                  <i class="fas fa-plus"></i>
+                  <span>إضافة طلب ترابيزة جديدة</span>
+                </button>
+              </div>
+            </div>
+            <div id="ordersGrid"
+              class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 scrollbar-thin overflow-y-auto max-h-[480px]">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden printable receipt container -->
+  <div id="printableReceipt" class="hidden" dir="rtl" lang="ar"
+    style="max-width:400px; margin:0 auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.5; color: #000; background: #fff; padding: 25px 30px; box-sizing: border-box; border: 1px solid #e75a2f; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.15);">
+    <h2>مطعم الأحلام</h2>
+    <div class="receipt-header" id="receiptDate"></div>
+    <div id="receiptCustomer"
+      style="text-align:center; font-weight: 600; margin-bottom: 15px; font-size: 16px; color: #333;"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>المنتج</th>
+          <th>الكمية</th>
+          <th>السعر</th>
+        </tr>
+      </thead>
+      <tbody id="receiptItems"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="2" style="text-align:right;">المجموع</td>
+          <td id="receiptTotal" style="text-align:center;"></td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="footer-text">شكراً لزيارتكم!</div>
+  </div>
+
+  <!-- Invoices Page Modal -->
+  <div id="invoicesPageModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 overflow-auto">
+    <div
+      class="bg-[#1a1a1a] max-w-4xl mx-auto my-10 rounded-lg shadow-lg p-6 flex flex-col min-h-[80vh] text-white relative">
+      <button id="closeInvoicesPageBtn"
+        class="absolute top-4 left-4 text-white text-2xl hover:text-[#e75a2f] transition" aria-label="إغلاق السجل">
+        <i class="fas fa-times"></i>
+      </button>
+      <h2 class="text-2xl font-bold mb-4 text-center text-[#e75a2f]">سجل الفواتير</h2>
+      <div id="invoicesPageList" class="flex-1 overflow-y-auto space-y-4 pr-2">
+      </div>
+      <button id="clearInvoicesPageBtn"
+        class="mt-4 bg-[#a22] hover:bg-[#c33] transition rounded py-2 font-semibold flex items-center justify-center space-x-2 rtl:space-x-reverse">
+        <span>حذف السجل</span> <i class="fas fa-trash-alt"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal لإضافة طلب جديد -->
+  <div id="addOrderModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
+      <h3 class="text-lg font-bold mb-4 text-center">إضافة طلب جديد</h3>
+      <form id="addOrderForm" class="flex flex-col space-y-4" onsubmit="submitNewOrder(event)">
+        <label class="flex flex-col text-right">
+          <span class="mb-1 font-semibold">رقم الترابيزة</span>
+          <input type="text" id="inputTable" required placeholder="مثلاً Table#8"
+            class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600" />
+        </label>
+        <div id="itemsContainer" class="flex flex-col space-y-3">
+          <div class="flex space-x-2 rtl:space-x-reverse items-center">
+            <label class="flex-1 flex flex-col text-right">
+              <span class="mb-1 font-semibold">اسم الخدمة</span>
+              <input type="text" name="itemName" required placeholder="مثلاً Fried Rice"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600" />
+            </label>
+            <label class="w-24 flex flex-col text-right">
+              <span class="mb-1 font-semibold">السعر ($)</span>
+              <input type="number" name="itemPrice" min="0" step="0.01" required placeholder="مثلاً 39"
+                class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600" />
+            </label>
+            <button type="button" aria-label="حذف خدمة" class="text-red-600 hover:text-red-800 mt-6"
+              onclick="removeItemRow(this)">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+        <button type="button" id="addItemBtn"
+          class="self-start bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1 text-sm flex items-center space-x-2 rtl:space-x-reverse"
+          aria-label="إضافة خدمة جديدة">
+          <i class="fas fa-plus"></i>
+          <span>إضافة خدمة جديدة</span>
+        </button>
+        <div class="flex justify-between">
+          <button type="button" class="bg-gray-400 hover:bg-gray-500 text-white rounded px-4 py-2"
+            onclick="closeAddOrderModal()">
+            إلغاء
+          </button>
+          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2">
+            إضافة
+          </button>
+        </div>
+      </form>
+      <button aria-label="إغلاق" class="absolute top-2 left-2 text-gray-600 hover:text-gray-900"
+        onclick="closeAddOrderModal()">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal سجل الطلبات -->
+  <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg w-full max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
+      <h3 class="text-lg font-bold mb-4 text-center">سجل الطلبات</h3>
+      <div id="historyContent" class="space-y-4">
+      </div>
+      <button aria-label="إغلاق سجل الطلبات" class="absolute top-2 left-2 text-gray-600 hover:text-gray-900"
+        onclick="closeHistoryModal()">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Print area (hidden) -->
+  <div id="printArea" class="hidden"></div>
+
+  <script>
+    // ==========================
+    // Login Page Logic
+    // ==========================
+    const loginPage = document.getElementById('loginPage');
+    const appContainer = document.getElementById('appContainer');
+    const loginForm = document.getElementById('loginForm');
+
+    loginForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      // Simple hardcoded login for demo
+      if (username === 'admin' && password === '1234') {
+        loginPage.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        initializeApp();
+      } else {
+        alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+      }
+    });
+
+    // ==========================
+    // Section Tabs Logic
+    // ==========================
+    const tabCurrentOrders = document.getElementById('tabCurrentOrders');
+    const tabOrdersList = document.getElementById('tabOrdersList');
+    const currentOrdersSection = document.getElementById('currentOrdersSection');
+    const ordersListSection = document.getElementById('ordersListSection');
+    const closeCurrentOrdersBtn = document.getElementById('closeCurrentOrdersBtn');
+
+    tabCurrentOrders.addEventListener('click', () => {
+      tabCurrentOrders.classList.add('text-[#e75a2f]', 'border-b-4', 'border-[#e75a2f]');
+      tabOrdersList.classList.remove('text-[#e75a2f]', 'border-b-4', 'border-[#e75a2f]');
+      currentOrdersSection.classList.remove('hidden');
+      ordersListSection.classList.add('hidden');
+    });
+
+    tabOrdersList.addEventListener('click', () => {
+      tabOrdersList.classList.add('text-[#e75a2f]', 'border-b-4', 'border-[#e75a2f]');
+      tabCurrentOrders.classList.remove('text-[#e75a2f]', 'border-b-4', 'border-[#e75a2f]');
+      ordersListSection.classList.remove('hidden');
+      currentOrdersSection.classList.add('hidden');
+    });
+
+    closeCurrentOrdersBtn.addEventListener('click', () => {
+      // On close button in left sidebar, hide left sidebar and show full width products on right
+      // For simplicity, just toggle left sidebar visibility
+      const leftSidebar = closeCurrentOrdersBtn.closest('div.w-full.md\\:w-1\\/3');
+      if (leftSidebar) {
+        if (leftSidebar.style.display === 'none') {
+          leftSidebar.style.display = 'flex';
+        } else {
+          leftSidebar.style.display = 'none';
+        }
+      }
+    });
+
+    // ==========================
+    // Section 1: طلباتك الحالية (Products & Orders)
+    // ==========================
+    const productsData = {
+      favorites: [
+        { id: "73", name: "كشري", price: 15, img: "https://img.freepik.com/premium-photo/egyptian-cuisine-is-rich-diverse-influenced-by-countrys-long-history-geographical-loca_915681-1.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق كشري مصري تقليدي مع العدس والأرز والمعكرونة والصلصة" },
+        { id: "74", name: "ملوخية", price: 12, img: "https://img.freepik.com/premium-photo/molokhia-soup_661031-597.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق شوربة ملوخية خضراء مع أرز" },
+        { id: "75", name: "محشي", price: 25, img: "https://img.freepik.com/free-photo/top-view-leaf-dolma-delicious-eastern-meat-meal-rolled-inside-green-leaves-dark-blue-desk-meat-meal-food-dinner-vegetables-health-calorie_140725-64843.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق محشي ورق عنب محشو بالأرز واللحم" },
+        { id: "76", name: "طاجن بامية باللحم", price: 18, img: "https://img.freepik.com/premium-photo/bamya-turkish-traditional-food-turkish-cuisine-homemade-food-okra-plate-organic-food_693630-10235.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق طاجن بامية باللحم مع صلصة الطماطم" },
+        { id: "77", name: "كفته مشوية", price: 14, img: "https://img.freepik.com/free-photo/lule-kebab-with-onions-pickles_140725-6245.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كفتة مشوية مع بصل ومخللات" },
+        { id: "78", name: "فراخ مشوية", price: 22, img: "https://img.freepik.com/free-photo/close-up-delicious-chicken-meal_23-2150741771.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة دجاج مشوي مع خضروات" },
+        { id: "79", name: "فته باللحم", price: 18, img: "https://img.freepik.com/free-photo/iskander-doner-bread-with-katig-table_140725-9835.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق فتة باللحم مع خبز محمص وصلصة" },
+        { id: "80", name: "بطاطس باللحم", price: 14, img: "https://img.freepik.com/free-photo/baked-potato-with-meat_2829-6398.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بطاطس مشوية محشوة باللحم والجبنة" },
+        { id: "81", name: "ممبار", price: 22, img: "https://img.freepik.com/free-photo/homemade-sausages-baked-oven-salad_2829-11925.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة ممبار محشي ومخبوز مع سلطة" },
+        { id: "82", name: "حمام محشي", price: 18, img: "https://img.freepik.com/free-photo/top-view-chicken-with-potatoes-orange_23-2148847438.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة حمام محشي مع بطاطس وخضروات" },
+        { id: "83", name: "طاجن عكاوي", price: 14, img: "https://img.freepik.com/free-photo/side-view-meat-with-potatoes-tomatoes-clay-pot_141793-1442.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طاجن عكاوي مع لحم وبطاطس" },
+        { id: "84", name: "صينية مكرونة بشاميل", price: 22, img: "https://img.freepik.com/free-photo/high-angle-view-tablecloth-fresh-ingredient-delicious-lasagna_23-2148076281.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة صينية مكرونة بشاميل مع جبنة" }
+      ],
+      kodrat: [
+        { id: "85", name: "شاورما فراخ", price: 18, img: "https://img.freepik.com/free-photo/from-fried-chicken-pieces-with-lemon-french-fries-salad-wood-plate_176474-2629.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة شاورما فراخ مع بطاطس مقلية وسلطة" },
+        { id: "86", name: "شاورما لحم", price: 14, img: "https://img.freepik.com/free-photo/high-angle-view-tablecloth-fresh-ingredient-delicious-lasagna_23-2148076281.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة شاورما لحم مع خبز وخضروات" },
+        { id: "87", name: "برجر دجاج", price: 22, img: "https://img.freepik.com/free-photo/burger-with-mayonnaise-sauce-it_188544-15976.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة برجر دجاج مع جبنة وخس وطماطم" },
+        { id: "88", name: "برجر لحم", price: 18, img: "https://img.freepik.com/free-psd/juicy-burger-with-crispy-fries-red-onions_191095-86335.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة برجر لحم مع جبنة وبصل مكرمل" },
+        { id: "89", name: "كريسبي بوكس", price: 14, img: "https://img.freepik.com/free-photo/arrangement-with-nuggets-red-box_23-2148314223.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بوكس كريسبي ناجتس مع صلصة" },
+        { id: "90", name: "وجبة ميكس جريل", price: 22, img: "https://img.freepik.com/free-photo/different-varieties-kabab-served-with-grilled-eggplants-tomatoes_140725-8134.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة وجبة ميكس جريل مشاوي مع باذنجان مشوي" },
+        { id: "91", name: "سندويتش شيش طاووق", price: 18, img: "https://img.freepik.com/free-photo/tendir-doner-with-chicken-table_140725-2443.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سندويتش شيش طاووق مع خبز وخضروات" },
+        { id: "92", name: "فاهيتا دجاج", price: 14, img: "https://img.freepik.com/free-photo/platter-fried-thin-lamb-slices-cooked-with-colourful-bell-peppers_140725-2643.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق فاهيتا دجاج مع فلفل ملون" },
+        { id: "93", name: "زنجر رول", price: 22, img: "https://img.freepik.com/free-photo/finger-chicken-nuggets-served-with-french-fries_140725-5806.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة زنجر رول مع بطاطس مقلية" },
+        { id: "94", name: "بطاطس محمرة", price: 18, img: "https://img.freepik.com/free-photo/crispy-french-fries-with-ketchup-mayonnaise_1150-26588.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بطاطس مقلية مقرمشة مع كاتشب ومايونيز" },
+        { id: "95", name: "ناجتس دجاج ", price: 14, img: "https://img.freepik.com/free-photo/delicious-crispy-table_23-2150857866.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة ناجتس دجاج مقرمش مع صلصة" },
+        { id: "96", name: "هوت دجاج", price: 22, img: "https://img.freepik.com/free-photo/close-up-fried-chicken-drumsticks_23-2148682835.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة قطع دجاج مقلية حارة" }
+      ],
+      buffets: [
+        { id: "97", name: "بيتزا مارجريتا ", price: 20, img: "https://img.freepik.com/free-photo/imeretian-khachapuri-cheese-lemon-side-view_140725-11276.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا مارجريتا مع جبنة وطماطم" },
+        { id: "98", name: "بيتزا سوبر سوبريم", price: 18, img: "https://img.freepik.com/free-photo/top-view-vegetarian-pizza-with-eggplant-bell-pepper-red-onion-tomato-mushroom_141793-2454.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا سوبر سوبريم مع خضروات متنوعة" },
+        { id: "99", name: "بيتزا ببروني ", price: 14, img: "https://img.freepik.com/free-photo/chicken-pizza-with-bell-pepper-olives_140725-7233.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا ببروني مع فلفل وزيتون" },
+        { id: "100", name: "بيتزا فراخ باربيكيو", price: 22, img: "https://img.freepik.com/free-photo/pizza-pizza-filled-with-tomatoes-salami-olives_140725-1200.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا فراخ باربيكيو مع صلصة باربيكيو" },
+        { id: "101", name: "بيتزا بالجبنة والزيتون ", price: 14, img: "https://img.freepik.com/free-photo/mix-pizza-with-tomato-slices-mushroom-olive_140725-185.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا بالجبنة والزيتون مع طماطم" },
+        { id: "102", name: "بيتزا لحم ", price: 22, img: "https://img.freepik.com/free-photo/chicken-pizza-with-bell-pepper-olives_140725-7233.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا لحم مع فلفل وزيتون" },
+        { id: "103", name: "بيتزا خضار", price: 18, img: "https://img.freepik.com/free-photo/side-view-pizza-with-slices-bell-pepper-pizza-slices-flour-board-cookware_176474-3185.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا خضار مع فلفل ملون وطماطم" },
+        { id: "104", name: "بيتزا تونة", price: 14, img: "https://img.freepik.com/free-photo/large-mixed-pizza-with-meat_140725-1274.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا تونة مع جبنة وخضروات" },
+        { id: "105", name: "بيتزا زنجر", price: 22, img: "https://img.freepik.com/free-photo/salami-pizza-table_140725-8789.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا زنجر مع سلامي وجبنة" },
+        { id: "106", name: "بيتزا شاورما", price: 18, img: "https://img.freepik.com/free-photo/pizza-with-mixed-ingredients-cheese-top_114579-3438.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا شاورما مع جبنة وخضروات" },
+        { id: "107", name: "بيتزا سجق", price: 14, img: "https://img.freepik.com/free-photo/mixed-pizza-with-sliced-lemon_140725-2808.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا سجق مع شرائح ليمون" },
+        { id: "108", name: "بيتزا كفته", price: 14, img: "https://img.freepik.com/free-photo/mixed-pizza-with-sliced-lemon_140725-2808.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بيتزا كفته مع شرائح ليمون" }
+      ],
+      drinks: [
+        { id: "1", name: "عصير برتقال", price: 10, img: "https://img.freepik.com/free-photo/glass-orange-juice-placed-wood_1150-9661.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة عصير برتقال طازج في كوب شفاف" },
+        { id: "2", name: "عصير مانجو", price: 8, img: "https://img.freepik.com/free-photo/delicious-mango-still-life_23-2151542230.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة عصير مانجو طازج في كوب" },
+        { id: "3", name: "عصير ليمون بالنعناع", price: 18, img: "https://img.freepik.com/free-photo/refreshing-cocktail-with-ice-cubes_140725-8773.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة عصير ليمون بالنعناع مع مكعبات ثلج" },
+        { id: "4", name: "عصير كوكتيل مشكل", price: 14, img: "https://img.freepik.com/free-photo/pink-cocktail-exotic-fruits-black-background_23-2147795335.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة عصير كوكتيل مشكل مع فواكه" },
+        { id: "5", name: "عصير جوافة", price: 22, img: "https://img.freepik.com/premium-photo/juice-melon-with-mint-glass-table-hami-melon_1205-7426.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة عصير جوافة مع نعناع في كوب" },
+        { id: "6", name: "مياة معدنية", price: 18, img: "https://img.freepik.com/free-photo/photorealistic-water-bottle_23-2151049051.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة زجاجة مياه معدنية شفافة" },
+        { id: "7", name: "بيبسي ", price: 14, img: "https://img.freepik.com/premium-photo/plastic-disposable-cup-cola-soft-drink-isolated-white-background_987113-462.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب بلاستيكي يحتوي على بيبسي مع ثلج" },
+        { id: "8", name: "موهيتو ", price: 22, img: "https://img.freepik.com/free-photo/green-cocktail-with-mint-ice-cubes-lemon-slice_114579-3402.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوكتيل موهيتو مع نعناع وشرائح ليمون" },
+        { id: "9", name: "سفن", price: 18, img: "https://img.freepik.com/free-photo/close-up-soda-glass-with-pizza-slices_23-2148262915.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب يحتوي على مشروب سفن مع شرائح بيتزا" },
+        { id: "10", name: "عصير رمان", price: 14, img: "https://img.freepik.com/free-photo/pomegranate-juice-glass-with-pipe_140725-3668.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة عصير رمان في كوب مع مصاصة" },
+        { id: "11", name: "ميرندا ", price: 22, img: "https://img.freepik.com/premium-photo/iced-cola-plastic-transparent-cup-with-green-straw-white-background-with-shadow_68799-111.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب بلاستيكي يحتوي على ميرندا مثلجة" },
+        { id: "12", name: "سموزي فواكه", price: 18, img: "https://img.freepik.com/free-psd/delicious-strawberry-banana-smoothie-splashing-fresh-fruit-goodness_84443-43912.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سموزي فواكه بالفراولة والموز" }
+      ],
+      softdrinks: [
+        { id: "13", name: "شاي أحمر", price: 6, img: "https://img.freepik.com/free-photo/tea-with-dried-black-tea-glass-cup-plaster-grungy-surface_176474-6423.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب شاي أحمر مع أوراق شاي جافة" },
+        { id: "14", name: "شاي بالنعناع", price: 6, img: "https://img.freepik.com/free-photo/front-view-tea-herbal-concept-with-copy-space_23-2148555200.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب شاي بالنعناع مع أوراق نعناع طازجة" },
+        { id: "15", name: "قهوة تركي", price: 18, img: "https://img.freepik.com/free-photo/closeup-turkish-coffee-served-traditional-cup_181624-38943.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة فنجان قهوة تركي مع فنجان صغير" },
+        { id: "16", name: "قهوة عربي", price: 18, img: "https://img.freepik.com/free-photo/cup-coffee-with-turkish-lokum_114579-20054.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة فنجان قهوة عربي مع حلوى تركية" },
+        { id: "17", name: "نسكافيه", price: 14, img: "https://img.freepik.com/free-photo/front-view-cup-cappuccino-with-cookies-book-table_141793-2825.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب نسكافيه مع بسكويت" },
+        { id: "18", name: "كابتشينو", price: 22, img: "https://img.freepik.com/free-psd/close-up-coffee-cup_23-2151806475.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب كابتشينو مع رغوة القهوة" },
+        { id: "19", name: "لاتيه", price: 18, img: "https://img.freepik.com/free-photo/high-view-glass-cappucino-with-coffee-beans_23-2148251687.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب لاتيه مع حبوب القهوة" },
+        { id: "20", name: "ايس كوفي", price: 14, img: "https://img.freepik.com/free-photo/aromatic-frappuccino-table_23-2148900668.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب ايس كوفي مع ثلج" },
+        { id: "21", name: "فرابتشينو", price: 22, img: "https://img.freepik.com/free-photo/chocolate-smoothie_1339-2856.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب فرابتشينو بالشوكولاتة" },
+        { id: "22", name: "ميلك شيك", price: 18, img: "https://img.freepik.com/free-photo/front-view-glass-dessert-with-chocolate_23-2148603291.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب ميلك شيك بالشوكولاتة" },
+        { id: "23", name: "شوكولاته ساخنة", price: 14, img: "https://img.freepik.com/free-photo/arrangement-winter-hygge-elements-with-cup-hot-chocolate_23-2148715885.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب شوكولاتة ساخنة مع كريمة" },
+        { id: "24", name: "حلبة بالحليب", price: 22, img: "https://img.freepik.com/free-photo/pie-slices-with-sultana-jar-milk_114579-33669.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كوب حلبة بالحليب مع قطع حلوى" }
+      ],
+      mainDishes: [
+        { id: "25", name: "كبسة دجاج", price: 30, img: "https://img.freepik.com/premium-photo/dum-handi-chicken-biryani-is-prepared-earthen-clay-pot-called-haandi-popular-indian-non-vegetarian-food_466689-52237.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق كبسة دجاج مع أرز وبهارات" },
+        { id: "26", name: "كبسة لحم", price: 45, img: "https://img.freepik.com/free-photo/top-view-rice-with-carrot-cooked-with-lamb-served-with-yogurt-salad_141793-2449.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق كبسة لحم مع أرز وجزر" },
+        { id: "27", name: "مندي دجاج", price: 10, img: "https://img.freepik.com/free-photo/close-up-appetizing-ramadan-meal_23-2151182540.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق مندي دجاج مع أرز" },
+        { id: "28", name: "مندي لحم", price: 18, img: "https://img.freepik.com/free-photo/top-view-iskender-kebab-garnished-with-tomato-sauce_140725-3046.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق مندي لحم مع صلصة طماطم" },
+        { id: "29", name: "مضغوط دجاج", price: 14, img: "https://img.freepik.com/free-photo/plov-with-meat-table_140725-9960.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق مضغوط دجاج مع أرز" },
+        { id: "30", name: "مرقوق بالحم الغنم", price: 22, img: "https://img.freepik.com/free-photo/lamb-bone-sauteed-bone-broth-with-herbs-tomato-sauce_114579-1900.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق مرقوق بالحم الغنم مع صلصة طماطم" },
+        { id: "31", name: "جريش باللحم", price: 18, img: "https://img.freepik.com/free-photo/marinated-calf-kebab-served-with-onion-sumac-mix-tomato-herbs-sauce_140725-1576.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق جريش باللحم مع بصل وبهارات" },
+        { id: "32", name: "قرصان للحم", price: 14, img: "https://img.freepik.com/free-photo/side-view-man-holds-fried-lamb-meat-skewers-with-fried-potatoes-tandoor-oven_141793-3881.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة قرصان للحم مع بطاطس مقلية" },
+        { id: "33", name: "سليق دجاج", price: 22, img: "https://img.freepik.com/free-photo/whole-chicken-grill-served-with-rice-garnish-white-plate_114579-873.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سليق دجاج مع أرز" },
+        { id: "34", name: "مشاوي مشكلة", price: 18, img: "https://img.freepik.com/free-photo/kebab-platter-with-grilled-chicken-lula-kebab-ribs-kebab-grilled-peppers_140725-6683.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق مشاوي مشكلة مع فلفل مشوي" },
+        { id: "35", name: "ريش ضاني", price: 14, img: "https://img.freepik.com/free-photo/meat-ribs-with-onions-wooden-board_140725-7390.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة ريش ضاني مع بصل على لوح خشبي" },
+        { id: "36", name: "دجاج تكا", price: 22, img: "https://img.freepik.com/free-photo/side-view-chicken-kebab-with-red-onion-greens-dried-barberry-pita_141793-4838.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة دجاج تكا مع بصل أحمر وخبز بيتا" }
+      ],
+      snacks: [
+        { id: "37", name: "بطاطس مقلية", price: 10, img: "https://img.freepik.com/free-photo/top-view-delicious-fries-sauce_23-2149235944.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بطاطس مقلية ذهبية مقرمشة مع صلصة" },
+        { id: "38", name: "ميني بيتزا", price: 15, img: "https://img.freepik.com/free-photo/flat-lay-mini-pizza-wood-tray_23-2148273118.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة ميني بيتزا على صينية خشبية" },
+        { id: "39", name: "سندوتش جبن", price: 12, img: "https://img.freepik.com/free-photo/man-eats-sandwich-served-with-salad_140725-8148.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سندوتش جبن مع سلطة" },
+        { id: "40", name: "سمبوسك بالجبنة", price: 18, img: "https://img.freepik.com/free-photo/triangled-shape-bourekas-baked-pie-with-sesame-seeds_140725-10794.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سمبوسك بالجبنة على طبق" },
+        { id: "41", name: "سمبوسك باللحم", price: 14, img: "https://img.freepik.com/free-photo/top-view-homemade-meat-pies-belyashi-wooden-platter-dark_140725-12561.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سمبوسك باللحم على صينية خشبية" },
+        { id: "42", name: "فول بالزيت", price: 22, img: "https://img.freepik.com/free-photo/dark-plate-tasty-ripe-silverberries-stone-table_114579-32223.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق فول بالزيت مع توابل" },
+        { id: "43", name: "حمص بالطحينة", price: 18, img: "https://img.freepik.com/free-photo/freshmade-oriental-classic-hummus-served-bowl-table_1220-5511.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق حمص بالطحينة مع زيت زيتون" },
+        { id: "44", name: "سلطة", price: 14, img: "https://img.freepik.com/free-photo/vegetable-salad-table_140725-10062.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق سلطة خضراء مع طماطم وخس" },
+        { id: "45", name: "خبز محمص", price: 22, img: "https://img.freepik.com/free-photo/slices-bread-wicker-basket_114579-41817.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة شرائح خبز محمص في سلة" },
+        { id: "46", name: "سندويتش طعمية", price: 18, img: "https://img.freepik.com/free-photo/grilled-beef-burger-rustic-bread-bun-generated-by-ai_188544-53982.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سندويتش طعمية مع خبز محمص" },
+        { id: "47", name: "فطائر بالجبنة", price: 14, img: "https://img.freepik.com/free-photo/top-view-fresh-baked-bread-with-cooked-egg-wooden-surface-bread-dough-bun-food-breakfast_140725-74667.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة فطائر بالجبنة على سطح خشبي" },
+        { id: "48", name: "بابا غنوج", price: 22, img: "https://img.freepik.com/free-photo/delicious-jewish-dish-high-angle_23-2148814519.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق بابا غنوج مع خبز" }
+      ],
+      desserts: [
+        { id: "49", name: "كنافة", price: 20, img: "https://img.freepik.com/free-photo/top-view-honey-cake-slice-yummy-inside-plate-wooden-table-biscuit-cake-sweet-sugar_140725-28598.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق كنافة ساخنة مع قشطة وعسل" },
+        { id: "50", name: "بقلاوة", price: 18, img: "https://img.freepik.com/free-photo/from-assorted-baked-with-baklava-baklava-sheki-flowers-smoked-fish_176474-2605.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق بقلاوة مع مكسرات" },
+        { id: "51", name: "بسبوسة", price: 18, img: "https://img.freepik.com/free-photo/small-cake-with-nuts-ice-cream_114579-4356.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة قطعة بسبوسة مع مكسرات" },
+        { id: "52", name: "أم علي", price: 18, img: "https://img.freepik.com/free-photo/semiya-payasam-shewai-sewai-khir-seviyan-kheer-is-indian-sweet-made-with-vermicelli-milk-ghee-sugar-jaggery-raisins-nuts_466689-75455.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق أم علي مع شعيرية وحليب" },
+        { id: "53", name: "بلح الشام", price: 14, img: "https://img.freepik.com/free-photo/traditional-mexican-dessert-churros-with-chocolate-top-view_114579-7318.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة بلح الشام مع صلصة الشوكولاتة" },
+        { id: "54", name: "قطايف", price: 22, img: "https://img.freepik.com/free-photo/indian-food-assortment-with-copy-space_23-2148747634.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق قطايف مع مكسرات" },
+        { id: "55", name: "أرز باللبن", price: 18, img: "https://img.freepik.com/free-photo/porridge-with-honey-tea_140725-144.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة طبق أرز باللبن مع عسل" },
+        { id: "56", name: "تشيز كيك", price: 14, img: "https://img.freepik.com/free-photo/side-view-cheesecake-with-cherry-jelly-top-white-plate_141793-2955.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة قطعة تشيز كيك مع جيلي الكرز" },
+        { id: "57", name: "موس شوكولاتة", price: 22, img: "https://img.freepik.com/free-photo/delicious-chocolate-mousse-with-close-up_23-2148405886.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة موس شوكولاتة في كوب" },
+        { id: "58", name: "جيلي فواكه", price: 18, img: "https://img.freepik.com/free-photo/homemade-yogurt-with-fresh-strawberry-old-dark-background_1150-37977.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة جيلي فواكه مع فراولة" },
+        { id: "59", name: "كب كيك", price: 14, img: "https://img.freepik.com/free-photo/close-up-tasty-chocolate-cupcake_1203-1901.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كب كيك بالشوكولاتة" },
+        { id: "60", name: "دونات", price: 22, img: "https://img.freepik.com/free-psd/3d-rendering-chocolate-donut_250435-1211.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة دونات بالشوكولاتة" }
+      ],
+      kidsMeals: [
+        { id: "61", name: "شاورما دجاج", price: 25, img: "https://img.freepik.com/free-photo/side-view-chicken-roll-grilled-chicken-lettuce-cucumber-tomato-mayo-pita_141793-4849.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة وجبة أطفال شاورما دجاج مع خبز وخضروات" },
+        { id: "62", name: "شاورما لحم", price: 28, img: "https://img.freepik.com/free-photo/side-view-chicken-doner-with-greens-cucumber-tomato-sauce-cucumber-red-onion-pita-slice-lemon-board_141793-4824.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة وجبة أطفال شاورما لحم مع خبز وخضروات" },
+        { id: "63", name: "فلافل", price: 18, img: "https://img.freepik.com/free-photo/tortilla-wrap-with-falafel-vegetables-yellow-background_123827-20315.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة وجبة فلافل مع خبز وطحينة" },
+        { id: "64", name: "كفته", price: 18, img: "https://img.freepik.com/free-photo/bread-bun-stuffed-with-meat-balls-green-bell-pepper-tomato-slices-sandwich-dip-sauce_114579-1837.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سندويتش كفته مع صلصة وخضروات" },
+        { id: "65", name: "زنجر", price: 14, img: "https://img.freepik.com/free-photo/front-view-tasty-toast-sandwiches-with-cheese-ham-inside-with-french-fries-wood_140725-20970.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سندويتش زنجر مع بطاطس مقلية" },
+        { id: "66", name: "بطاطس", price: 22, img: "https://img.freepik.com/premium-photo/shawarma-chicken-roll-pita-with-fresh-vegetables-cream-sauce-french-fries-wooden-backgro_157927-11785.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة وجبة بطاطس مع شاورما دجاج" },
+        { id: "67", name: "كبدة اسكندراني", price: 18, img: "https://img.freepik.com/free-photo/spicy-meat-bread-with-vegetables_140725-1230.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة كبدة اسكندراني مع خبز وخضروات" },
+        { id: "68", name: "دجاج بانية", price: 14, img: "https://img.freepik.com/free-photo/side-view-sandwich-with-chicken-nuggets-salad-leaves-pickles-sauce-served-with-french-fries-wooden-table_140725-12042.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سندويتش دجاج بانية مع بطاطس" },
+        { id: "69", name: "جمبري مقلي", price: 22, img: "https://img.freepik.com/free-photo/fresh-grilled-seafood-lemon-plate-generative-ai_188544-8288.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة جمبري مقلي مع شرائح ليمون" },
+        { id: "70", name: "بيض وجبنة", price: 18, img: "https://img.freepik.com/free-photo/burger-with-omelet-tomatoes-mushrooms-onion-white-surface_114579-30384.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة برجر بيض وجبنة مع طماطم وفطر" },
+        { id: "71", name: "برجر", price: 14, img: "https://img.freepik.com/free-photo/classic-cheese-burger-with-beef-cutlet-vegetables-onions-isolated-white-background_123827-29709.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة برجر كلاسيكي مع جبنة وخضروات" },
+        { id: "72", name: "سوسيس", price: 22, img: "https://img.freepik.com/free-photo/side-view-shawarma-with-fried-potatoes-board-cookware_176474-3215.jpg?uid=R200304319&ga=GA1.1.429031131.1747309046&semt=ais_hybrid&w=740", alt: "صورة سوسيس مع شاورما وبطاطس مقلية" }
+      ]
+    };
+
+    const productsContainer = document.getElementById('productsContainer');
+    const orderList = document.getElementById('orderList');
+    const totalPriceEl = document.getElementById('totalPrice');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const clearInvoicesBtn = document.getElementById('clearInvoicesBtn');
+    const categoryNav = document.getElementById('categoryNav');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const customerNameInput = document.getElementById('customerName');
+    const openInvoicesPageBtn = document.getElementById('openInvoicesPageBtn');
+
+    // Receipt elements
+    const printableReceipt = document.getElementById('printableReceipt');
+    const receiptItems = document.getElementById('receiptItems');
+    const receiptTotal = document.getElementById('receiptTotal');
+    const receiptDate = document.getElementById('receiptDate');
+    const receiptCustomer = document.getElementById('receiptCustomer');
+
+    // Invoices Page Modal elements
+    const invoicesPageModal = document.getElementById('invoicesPageModal');
+    const invoicesPageList = document.getElementById('invoicesPageList');
+    const closeInvoicesPageBtn = document.getElementById('closeInvoicesPageBtn');
+    const clearInvoicesPageBtn = document.getElementById('clearInvoicesPageBtn');
+
+    // Store order items as an object with productId keys
+    const orderItems = {};
+
+    // Load invoices from localStorage or initialize empty array
+    let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+
+    // Render products for a given category and optional search term
+    function renderProducts(category, searchTerm = '') {
+      productsContainer.innerHTML = '';
+      let products = productsData[category] || [];
+      if (searchTerm.trim() !== '') {
+        const term = searchTerm.trim().toLowerCase();
+        products = products.filter(p => p.name.toLowerCase().includes(term));
+      }
+      if (products.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'text-gray-500 text-center w-full';
+        p.textContent = 'لا توجد منتجات مطابقة للبحث.';
+        productsContainer.appendChild(p);
+        return;
+      }
+      products.forEach(product => {
+        const div = document.createElement('div');
+        div.className = 'cursor-pointer w-1/2 sm:w-1/3 md:w-1/5 bg-white rounded shadow p-2 flex flex-col items-center text-center hover:ring-2 hover:ring-[#e75a2f] transition';
+        div.dataset.id = product.id;
+        div.dataset.name = product.name;
+        div.dataset.price = product.price;
+
+        const img = document.createElement('img');
+        img.src = product.img;
+        img.alt = product.alt;
+        img.className = 'mb-2';
+        img.width = 80;
+        img.height = 80;
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'text-xs text-gray-700 font-semibold';
+        nameDiv.textContent = product.name;
+
+        div.appendChild(img);
+        div.appendChild(nameDiv);
+
+        div.addEventListener('click', () => {
+          const id = div.dataset.id;
+          const name = div.dataset.name;
+          const price = parseFloat(div.dataset.price);
+          const imgSrc = img.src;
+
+          if (orderItems[id]) {
+            orderItems[id].quantity++;
+          } else {
+            orderItems[id] = { id, name, price, quantity: 1, img: imgSrc };
+          }
+          updateOrderList();
+          updateTotal();
+        });
+
+        productsContainer.appendChild(div);
+      });
+    }
+
+    function createOrderItemElement(item) {
+      const div = document.createElement('div');
+      div.className = 'flex items-center justify-between';
+      div.dataset.id = item.id;
+
+      const leftDiv = document.createElement('div');
+      leftDiv.className = 'flex items-center space-x-3 rtl:space-x-reverse';
+
+      const img = document.createElement('img');
+      img.src = item.img;
+      img.alt = item.name + ' - صورة';
+      img.width = 40;
+      img.height = 40;
+      img.className = 'rounded';
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'text-white text-sm font-semibold';
+      nameDiv.textContent = item.name;
+
+      leftDiv.appendChild(img);
+      leftDiv.appendChild(nameDiv);
+
+      const qtyDiv = document.createElement('div');
+      qtyDiv.className = 'text-white text-sm flex items-center space-x-1 rtl:space-x-reverse';
+
+      const minusBtn = document.createElement('button');
+      minusBtn.className = 'text-white text-lg font-bold px-1';
+      minusBtn.textContent = '-';
+      minusBtn.title = 'إنقاص الكمية';
+      minusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (orderItems[item.id].quantity > 1) {
+          orderItems[item.id].quantity--;
+        } else {
+          delete orderItems[item.id];
+          div.remove();
+        }
+        updateOrderList();
+        updateTotal();
+      });
+
+      const qtySpan = document.createElement('span');
+      qtySpan.textContent = item.quantity;
+
+      const plusBtn = document.createElement('button');
+      plusBtn.className = 'text-white text-lg font-bold px-1';
+      plusBtn.textContent = '+';
+      plusBtn.title = 'زيادة الكمية';
+      plusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        orderItems[item.id].quantity++;
+        updateOrderList();
+        updateTotal();
+      });
+
+      qtyDiv.appendChild(minusBtn);
+      qtyDiv.appendChild(qtySpan);
+      qtyDiv.appendChild(plusBtn);
+
+      div.appendChild(leftDiv);
+      div.appendChild(qtyDiv);
+
+      return div;
+    }
+
+    function updateOrderList() {
+      orderList.innerHTML = '';
+      for (const id in orderItems) {
+        const item = orderItems[id];
+        const el = createOrderItemElement(item);
+        orderList.appendChild(el);
+      }
+    }
+
+    function updateTotal() {
+      let total = 0;
+      for (const id in orderItems) {
+        total += orderItems[id].price * orderItems[id].quantity;
+      }
+      totalPriceEl.textContent = total.toFixed(2) + ' ر.س';
+      checkoutBtn.disabled = total === 0 || customerNameInput.value.trim() === '';
+    }
+
+    function printReceipt(invoice) {
+      // Clear previous receipt items
+      receiptItems.innerHTML = '';
+
+      // Set date
+      const date = new Date(invoice.date);
+      receiptDate.textContent = date.toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' });
+
+      // Set customer name
+      receiptCustomer.textContent = invoice.customerName ? `اسم العميل: ${invoice.customerName}` : '';
+
+      // Add items rows
+      invoice.items.forEach(item => {
+        const tr = document.createElement('tr');
+
+        const tdName = document.createElement('td');
+        tdName.textContent = item.name;
+
+        const tdQty = document.createElement('td');
+        tdQty.textContent = item.quantity;
+
+        const tdPrice = document.createElement('td');
+        tdPrice.textContent = (item.price * item.quantity).toFixed(2);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdQty);
+        tr.appendChild(tdPrice);
+
+        receiptItems.appendChild(tr);
+      });
+
+      receiptTotal.textContent = invoice.total.toFixed(2);
+
+      // Show receipt container
+      printableReceipt.classList.remove('hidden');
+
+      // Trigger print
+      window.print();
+
+      // Hide receipt container after print
+      printableReceipt.classList.add('hidden');
+    }
+
+    // Render invoices inside the modal page
+    function renderInvoicesPage() {
+      invoicesPageList.innerHTML = '';
+      if (invoices.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'text-gray-400 text-center';
+        p.textContent = 'لا توجد فواتير حتى الآن.';
+        invoicesPageList.appendChild(p);
+        return;
+      }
+      invoices.slice().reverse().forEach((invoice, index) => {
+        const div = document.createElement('div');
+        div.className = 'bg-[#333] p-4 rounded shadow cursor-pointer hover:bg-[#444] transition flex flex-col space-y-2';
+
+        const date = new Date(invoice.date);
+        const dateStr = date.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+
+        const header = document.createElement('div');
+        header.className = 'font-semibold text-[#e75a2f] flex justify-between text-lg';
+        header.innerHTML = `<span>فاتورة #${invoices.length - index}</span><span>${dateStr}</span>`;
+        div.appendChild(header);
+
+        if (invoice.customerName) {
+          const customerDiv = document.createElement('div');
+          customerDiv.className = 'text-white font-semibold';
+          customerDiv.textContent = `اسم العميل: ${invoice.customerName}`;
+          div.appendChild(customerDiv);
+        }
+
+        invoice.items.forEach(item => {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'flex justify-between text-white text-sm';
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = `${item.name} x${item.quantity}`;
+          const priceSpan = document.createElement('span');
+          priceSpan.textContent = (item.price * item.quantity).toFixed(2) + ' ر.س';
+          itemDiv.appendChild(nameSpan);
+          itemDiv.appendChild(priceSpan);
+          div.appendChild(itemDiv);
+        });
+
+        const totalDiv = document.createElement('div');
+        totalDiv.className = 'flex justify-between font-bold text-white border-t border-[#555] pt-2 mt-2 text-base';
+        totalDiv.innerHTML = `<span>المجموع</span><span>${invoice.total.toFixed(2)} ر.س</span>`;
+        div.appendChild(totalDiv);
+
+        // On click, print this invoice
+        div.addEventListener('click', () => {
+          printReceipt(invoice);
+        });
+
+        invoicesPageList.appendChild(div);
+      });
+    }
+
+    checkoutBtn.addEventListener('click', () => {
+      if (checkoutBtn.disabled) return;
+      const customerName = customerNameInput.value.trim();
+      if (!customerName) {
+        alert('يرجى إدخال اسم العميل قبل إتمام عملية الدفع.');
+        customerNameInput.focus();
+        return;
+      }
+      const itemsArray = [];
+      for (const id in orderItems) {
+        const item = orderItems[id];
+        itemsArray.push({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        });
+      }
+      const total = parseFloat(totalPriceEl.textContent);
+
+      // Create invoice object
+      const invoice = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        items: itemsArray,
+        total: total,
+        customerName: customerName
+      };
+
+      // Save invoice to localStorage
+      invoices.push(invoice);
+      localStorage.setItem('invoices', JSON.stringify(invoices));
+
+      // Print receipt
+      printReceipt(invoice);
+
+      // Clear order after checkout
+      for (const id in orderItems) {
+        delete orderItems[id];
+      }
+      updateOrderList();
+      updateTotal();
+      customerNameInput.value = '';
+    });
+
+    clearInvoicesBtn.addEventListener('click', () => {
+      if (confirm('هل أنت متأكد من حذف جميع الفواتير؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        invoices = [];
+        localStorage.removeItem('invoices');
+        renderInvoicesPage();
+      }
+    });
+
+    // Open invoices page modal
+    openInvoicesPageBtn.addEventListener('click', () => {
+      renderInvoicesPage();
+      invoicesPageModal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    });
+
+    // Close invoices page modal
+    closeInvoicesPageBtn.addEventListener('click', () => {
+      invoicesPageModal.classList.add('hidden');
+      document.body.style.overflow = '';
+    });
+
+    // Clear invoices from modal button
+    clearInvoicesPageBtn.addEventListener('click', () => {
+      if (confirm('هل أنت متأكد من حذف جميع الفواتير؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        invoices = [];
+        localStorage.removeItem('invoices');
+        renderInvoicesPage();
+      }
+    });
+
+    // Category navigation click handler
+    categoryNav.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        // Remove active styles from all
+        categoryNav.querySelectorAll('a').forEach(a => a.classList.remove('text-[#e75a2f]', 'font-bold'));
+        // Add active style to clicked
+        link.classList.add('text-[#e75a2f]', 'font-bold');
+        // Render products for selected category
+        const category = link.dataset.category;
+        renderProducts(category, searchInput.value);
+      });
+    });
+
+    // Search function
+    function performSearch() {
+      const activeLink = categoryNav.querySelector('a.text-[#e75a2f]');
+      const category = activeLink ? activeLink.dataset.category : 'favorites';
+      renderProducts(category, searchInput.value);
+    }
+
+    searchBtn.addEventListener('click', () => {
+      performSearch();
+    });
+
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+
+    // Enable/disable checkout button based on customer name and order items
+    customerNameInput.addEventListener('input', () => {
+      updateTotal();
+    });
+
+    // Initialize default category (المفضلة)
+    const defaultCategoryLink = categoryNav.querySelector('a[data-category="favorites"]');
+    if (defaultCategoryLink) {
+      defaultCategoryLink.classList.add('text-[#e75a2f]', 'font-bold');
+      renderProducts('favorites');
+    }
+
+    // ==========================
+    // Section 2: قائمة الطلبات (Orders List)
+    // ==========================
+    const ordersGrid = document.getElementById('ordersGrid');
+    const orderStatusEl = document.getElementById('orderStatusText');
+    const orderTableEl = document.getElementById('orderTable');
+    const orderStatusContainer = document.getElementById('orderStatusContainer');
+    const orderTimeDate = document.getElementById('orderTimeDate');
+    const orderNumberEl = document.getElementById('orderNumber');
+    const orderItemsEl = document.getElementById('orderItems');
+    const itemsContainer = document.getElementById('itemsContainer');
+    const addItemBtn = document.getElementById('addItemBtn');
+    const printArea = document.getElementById('printArea');
+    const historyModal = document.getElementById('historyModal');
+    const historyContent = document.getElementById('historyContent');
+
+    let orders = [];
+    const savedOrders = localStorage.getItem('ordersData');
+    if (savedOrders) {
+      try {
+        orders = JSON.parse(savedOrders);
+        orders.forEach(order => {
+          if (order.datetime && typeof order.datetime === 'string') {
+            order.datetime = new Date(order.datetime).toISOString();
+          }
+        });
+      } catch {
+        orders = [];
+      }
+    }
+    if (orders.length === 0) {
+      orders = [
+        {
+          id: 1,
+          status: 'ASAP',
+          table: 'Table#7',
+          price: 39,
+          datetime: '2023-10-01T08:32:00',
+          paid: false,
+          items: [
+            { name: 'Grilled Chicken Fillet', price: 39 }
+          ],
+        },
+        {
+          id: 2,
+          status: 'ASAP',
+          table: 'Table#8',
+          price: 45,
+          datetime: '2023-10-01T08:35:00',
+          paid: false,
+          items: [
+            { name: 'Vegetable Fried Rice', price: 45 }
+          ],
+        },
+        {
+          id: 3,
+          status: 'ASAP',
+          table: 'Table#9',
+          price: 50,
+          datetime: '2023-10-01T08:40:00',
+          paid: false,
+          items: [
+            { name: 'Fried Shrimp', price: 50 }
+          ],
+        },
+      ];
+    }
+
+    function saveOrders() {
+      localStorage.setItem('ordersData', JSON.stringify(orders));
+    }
+
+    function sortOrdersById() {
+      orders.sort((a, b) => a.id - b.id);
+    }
+
+    function getOldestOrder() {
+      if (orders.length === 0) return null;
+      sortOrdersById();
+      // إرجاع أول طلب غير مخفي
+      for (const order of orders) {
+        if (!hiddenIds.has(order.id)) return order;
+      }
+      return null;
+    }
+
+    function formatDateTime(date) {
+      const d = new Date(date);
+      const hours = d.getHours().toString().padStart(2, '0');
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const year = d.getFullYear().toString().slice(-2);
+      return `${hours}:${minutes} ${day}/${month}/${year}`;
+    }
+
+    function createOrderCard(order, index) {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-md p-3 flex flex-col space-y-2';
+
+      const header = document.createElement('div');
+      header.className = 'flex justify-between items-center text-xs font-semibold text-gray-600';
+
+      const statusDiv = document.createElement('div');
+      statusDiv.textContent = order.status;
+
+      const tableDiv = document.createElement('div');
+      tableDiv.textContent = order.table;
+
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.className = 'flex space-x-1 rtl:space-x-reverse';
+
+      const hideBtn = document.createElement('button');
+      hideBtn.setAttribute('aria-label', 'إخفاء');
+      hideBtn.className = 'bg-orange-600 text-white rounded px-1.5 py-0.5';
+      hideBtn.innerHTML = '<i class="fas fa-eye-slash text-xs"></i>';
+      hideBtn.onclick = () => {
+        removeOrderById(order.id);
+      };
+
+      const printBtn = document.createElement('button');
+      printBtn.setAttribute('aria-label', 'طباعة');
+      printBtn.className = 'bg-orange-600 text-white rounded px-1.5 py-0.5';
+      printBtn.innerHTML = '<i class="fas fa-print text-xs"></i>';
+      printBtn.onclick = () => {
+        printOrder(order);
+      };
+
+      buttonsDiv.appendChild(hideBtn);
+      buttonsDiv.appendChild(printBtn);
+
+      header.appendChild(statusDiv);
+      header.appendChild(tableDiv);
+      header.appendChild(buttonsDiv);
+
+      const orderNumDiv = document.createElement('div');
+      orderNumDiv.className = 'text-xs text-gray-600 font-semibold';
+      orderNumDiv.textContent = `رقم الطلب: ${order.id}`;
+
+      const itemName = document.createElement('div');
+      itemName.className = 'text-sm font-semibold text-gray-900';
+      itemName.textContent = `اسم الخدمة: ${order.items.map(i => i.name).join('، ')}`;
+
+      const paymentBtn = document.createElement('button');
+      paymentBtn.className = order.paid
+        ? 'bg-green-600 hover:bg-green-700 text-white rounded px-3 py-1 text-xs font-semibold'
+        : 'bg-red-600 hover:bg-red-700 text-white rounded px-3 py-1 text-xs font-semibold';
+      paymentBtn.textContent = order.paid ? 'تم الدفع' : 'لم يتم الدفع';
+      paymentBtn.onclick = () => {
+        orders[index].paid = !orders[index].paid;
+        saveOrders();
+        renderOrders();
+        renderOldestOrder();
+        renderHistory();
+      };
+
+      const priceDiv = document.createElement('div');
+      priceDiv.className = 'text-xs font-semibold text-gray-700 text-left';
+      priceDiv.textContent = `السعر: $${order.price.toFixed(2)}`;
+
+      const datetimeDiv = document.createElement('div');
+      datetimeDiv.className = 'text-xs text-gray-500 text-left';
+      datetimeDiv.textContent = `الوقت: ${formatDateTime(order.datetime)}`;
+
+      card.appendChild(header);
+      card.appendChild(orderNumDiv);
+      card.appendChild(itemName);
+      card.appendChild(paymentBtn);
+      card.appendChild(priceDiv);
+      card.appendChild(datetimeDiv);
+
+      return card;
+    }
+
+    function renderOldestOrder() {
+      const order = getOldestOrder();
+
+      if (!order) {
+        orderStatusContainer.innerHTML = '';
+        orderTimeDate.textContent = '--:-- --/--/--';
+        orderStatusEl.textContent = '-';
+        orderTableEl.textContent = '-';
+        orderItemsEl.textContent = 'اسم الخدمة: -';
+        orderNumberEl.textContent = 'رقم الطلب: -';
+        return;
+      }
+
+      orderStatusContainer.innerHTML = `
+        <div class="w-5 h-5 rounded-full border border-green-600 flex items-center justify-center text-green-600 text-xs font-bold">
+          <i class="fas fa-check"></i>
+        </div>
+        <div class="text-xs text-gray-600 font-semibold">$ <span class="text-gray-900 font-bold">${order.price}</span></div>
+      `;
+
+      orderTimeDate.textContent = formatDateTime(order.datetime);
+      orderStatusEl.textContent = order.status;
+      orderTableEl.textContent = order.table;
+      orderItemsEl.textContent = `اسم الخدمة: ${order.items.map(i => i.name).join('، ')}`;
+      orderNumberEl.textContent = `رقم الطلب: ${order.id}`;
+    }
+
+    // مجموعة لتخزين الطلبات المخفية من العرض العلوي وقائمة الطلبات
+    const hiddenIds = new Set();
+
+    // تعديل renderOrders و renderOldestOrder ليأخذوا بعين الاعتبار الطلبات المخفية
+
+    function renderOrders() {
+      sortOrdersById();
+      ordersGrid.innerHTML = '';
+      orders.forEach((order, idx) => {
+        if (!hiddenIds.has(order.id)) {
+          ordersGrid.appendChild(createOrderCard(order, idx));
+        }
+      });
+      saveOrders();
+    }
+
+    function hideOldestOrder() {
+      const oldest = getOldestOrder();
+      if (!oldest) return;
+      hiddenIds.add(oldest.id);
+      renderOrders();
+      renderOldestOrder();
+    }
+
+    // عند حذف الطلب، نزيله من hiddenIds أيضاً
+    function removeOrderById(id) {
+      orders = orders.filter(o => o.id !== id);
+      hiddenIds.delete(id);
+      renderOrders();
+      renderOldestOrder();
+      renderHistory();
+    }
+
+    function openAddOrderModal() {
+      document.getElementById('addOrderModal').classList.remove('hidden');
+      resetItemsContainer();
+    }
+
+    function closeAddOrderModal() {
+      document.getElementById('addOrderModal').classList.add('hidden');
+      document.getElementById('addOrderForm').reset();
+      resetItemsContainer();
+    }
+
+    function resetItemsContainer() {
+      itemsContainer.innerHTML = '';
+      addItemRow();
+    }
+
+    function addItemRow() {
+      const div = document.createElement('div');
+      div.className = 'flex space-x-2 rtl:space-x-reverse items-center';
+
+      const labelName = document.createElement('label');
+      labelName.className = 'flex-1 flex flex-col text-right';
+      const spanName = document.createElement('span');
+      spanName.className = 'mb-1 font-semibold';
+      spanName.textContent = 'اسم الخدمة';
+      const inputName = document.createElement('input');
+      inputName.type = 'text';
+      inputName.name = 'itemName';
+      inputName.required = true;
+      inputName.placeholder = 'مثلاً Fried Rice';
+      inputName.className = 'border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600';
+      labelName.appendChild(spanName);
+      labelName.appendChild(inputName);
+
+      const labelPrice = document.createElement('label');
+      labelPrice.className = 'w-24 flex flex-col text-right';
+      const spanPrice = document.createElement('span');
+      spanPrice.className = 'mb-1 font-semibold';
+      spanPrice.textContent = 'السعر ($)';
+      const inputPrice = document.createElement('input');
+      inputPrice.type = 'number';
+      inputPrice.name = 'itemPrice';
+      inputPrice.min = '0';
+      inputPrice.step = '0.01';
+      inputPrice.required = true;
+      inputPrice.placeholder = 'مثلاً 39';
+      inputPrice.className = 'border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600';
+      labelPrice.appendChild(spanPrice);
+      labelPrice.appendChild(inputPrice);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.setAttribute('aria-label', 'حذف خدمة');
+      removeBtn.className = 'text-red-600 hover:text-red-800 mt-6';
+      removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      removeBtn.onclick = () => {
+        removeItemRow(removeBtn);
+      };
+
+      div.appendChild(labelName);
+      div.appendChild(labelPrice);
+      div.appendChild(removeBtn);
+
+      itemsContainer.appendChild(div);
+    }
+
+    function removeItemRow(button) {
+      if (itemsContainer.children.length > 1) {
+        button.parentElement.remove();
+      }
+    }
+
+    addItemBtn.addEventListener('click', () => {
+      addItemRow();
+    });
+
+    function submitNewOrder(event) {
+      event.preventDefault();
+      const table = document.getElementById('inputTable').value.trim();
+
+      if (!table) {
+        alert('يرجى إدخال رقم الترابيزة');
+        return;
+      }
+
+      const itemNames = Array.from(document.getElementsByName('itemName')).map(i => i.value.trim());
+      const itemPricesRaw = Array.from(document.getElementsByName('itemPrice')).map(i => i.value.trim());
+
+      if (itemNames.some(name => name === '') || itemPricesRaw.some(price => price === '')) {
+        alert('يرجى إدخال اسم الخدمة والسعر لكل خدمة');
+        return;
+      }
+
+      const itemPrices = itemPricesRaw.map(p => parseFloat(p));
+      if (itemPrices.some(price => isNaN(price) || price < 0)) {
+        alert('يرجى إدخال أسعار صحيحة لكل خدمة');
+        return;
+      }
+
+      const items = itemNames.map((name, idx) => ({ name, price: itemPrices[idx] }));
+
+      const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
+
+      const nowISO = new Date().toISOString();
+
+      const maxId = orders.length ? Math.max(...orders.map(o => o.id)) : 0;
+      const newId = maxId + 1;
+
+      const newOrder = {
+        id: newId,
+        status: 'ASAP',
+        table,
+        items,
+        paid: false,
+        price: totalPrice,
+        datetime: nowISO,
+      };
+
+      orders.push(newOrder);
+      renderOrders();
+      renderOldestOrder();
+      closeAddOrderModal();
+      alert('تم إضافة الطلب بنجاح');
+    }
+
+    function printOrder(order) {
+      let itemsHtml = '';
+      order.items.forEach(item => {
+        itemsHtml += `
+          <tr>
+            <td class="border px-3 py-1 text-right">${item.name}</td>
+            <td class="border px-3 py-1 text-center">${item.price.toFixed(2)} $</td>
+          </tr>
+        `;
+      });
+
+      const printContent = `
+        <div class="max-w-md mx-auto p-4 border border-gray-700 rounded shadow-md">
+          <h2 class="text-2xl font-bold mb-4 text-center">فاتورة الطلب</h2>
+          <div class="mb-2 text-right font-semibold">رقم الطلب: ${order.id}</div>
+          <div class="mb-2 text-right font-semibold">الترابيزة: ${order.table}</div>
+          <div class="mb-2 text-right font-semibold">الحالة: ${order.status}</div>
+          <div class="mb-2 text-right font-semibold">التاريخ والوقت: ${formatDateTime(order.datetime)}</div>
+          <table class="w-full border-collapse mb-4">
+            <thead>
+              <tr>
+                <th class="border px-3 py-1 bg-gray-200 text-right">اسم الخدمة</th>
+                <th class="border px-3 py-1 bg-gray-200 text-center">السعر</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          <div class="text-right font-bold text-lg">الإجمالي: $${order.price.toFixed(2)}</div>
+          <div class="mt-6 text-center text-sm text-gray-600">شكراً لزيارتكم</div>
+        </div>
+      `;
+
+      printArea.innerHTML = printContent;
+      printArea.classList.remove('hidden');
+      window.print();
+      printArea.classList.add('hidden');
+      printArea.innerHTML = '';
+    }
+
+    function printOldestOrder() {
+      const oldest = getOldestOrder();
+      if (!oldest) return;
+      printOrder(oldest);
+    }
+
+    function openHistoryModal() {
+      renderHistory();
+      historyModal.classList.remove('hidden');
+    }
+
+    function closeHistoryModal() {
+      historyModal.classList.add('hidden');
+      historyContent.innerHTML = '';
+    }
+
+    function renderHistory() {
+      sortOrdersById();
+      if (orders.length === 0) {
+        historyContent.innerHTML = `<p class="text-center text-gray-700 font-semibold">لا توجد طلبات حالياً</p>`;
+        return;
+      }
+      historyContent.innerHTML = '';
+      orders.forEach((order, idx) => {
+        const card = document.createElement('div');
+        card.className = 'border border-gray-300 rounded p-3 bg-gray-50';
+
+        const header = document.createElement('div');
+        header.className = 'flex justify-between items-center mb-2 text-sm font-semibold text-gray-700';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.textContent = `رقم الطلب: ${order.id} - الترابيزة: ${order.table} - الحالة: ${order.status}`;
+
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'flex space-x-2 rtl:space-x-reverse';
+
+        const togglePaidBtn = document.createElement('button');
+        togglePaidBtn.className = order.paid
+          ? 'bg-green-600 hover:bg-green-700 text-white rounded px-2 py-1 text-xs font-semibold'
+          : 'bg-red-600 hover:bg-red-700 text-white rounded px-2 py-1 text-xs font-semibold';
+        togglePaidBtn.textContent = order.paid ? 'تم الدفع' : 'لم يتم الدفع';
+        togglePaidBtn.onclick = () => {
+          orders[idx].paid = !orders[idx].paid;
+          saveOrders();
+          renderOrders();
+          renderOldestOrder();
+          renderHistory();
+        };
+
+        const printBtn = document.createElement('button');
+        printBtn.setAttribute('aria-label', 'طباعة');
+        printBtn.className = 'bg-orange-600 text-white rounded px-2 py-1 text-xs flex items-center justify-center';
+        printBtn.innerHTML = '<i class="fas fa-print"></i>';
+        printBtn.onclick = () => {
+          printOrder(order);
+        };
+
+        const hideBtn = document.createElement('button');
+        hideBtn.setAttribute('aria-label', 'إخفاء الطلب');
+        hideBtn.className = 'bg-yellow-500 hover:bg-yellow-600 text-white rounded px-2 py-1 text-xs flex items-center justify-center';
+        hideBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        hideBtn.onclick = () => {
+          hiddenIds.add(order.id);
+          renderOrders();
+          renderOldestOrder();
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.setAttribute('aria-label', 'حذف الطلب');
+        deleteBtn.className = 'bg-red-600 hover:bg-red-700 text-white rounded px-2 py-1 text-xs flex items-center justify-center';
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        deleteBtn.onclick = () => {
+          if (confirm(`هل أنت متأكد من حذف الطلب رقم ${order.id}؟`)) {
+            removeOrderById(order.id);
+            renderHistory();
+          }
+        };
+
+        buttonsDiv.appendChild(togglePaidBtn);
+        buttonsDiv.appendChild(printBtn);
+        buttonsDiv.appendChild(hideBtn);
+        buttonsDiv.appendChild(deleteBtn);
+
+        header.appendChild(infoDiv);
+        header.appendChild(buttonsDiv);
+
+        const itemsList = document.createElement('ul');
+        itemsList.className = 'text-sm text-gray-800 list-disc list-inside mb-1';
+        order.items.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = `${item.name} - $${item.price.toFixed(2)}`;
+          itemsList.appendChild(li);
+        });
+
+        const priceDiv = document.createElement('div');
+        priceDiv.className = 'text-xs font-semibold text-gray-700 text-left';
+        priceDiv.textContent = `السعر الإجمالي: $${order.price.toFixed(2)}`;
+
+        const datetimeDiv = document.createElement('div');
+        datetimeDiv.className = 'text-xs text-gray-500 text-left';
+        datetimeDiv.textContent = `الوقت: ${formatDateTime(order.datetime)}`;
+
+        card.appendChild(header);
+        card.appendChild(itemsList);
+        card.appendChild(priceDiv);
+        card.appendChild(datetimeDiv);
+
+        historyContent.appendChild(card);
+      });
+    }
+
+    // ==========================
+    // Initialize App after login
+    // ==========================
+    function initializeApp() {
+      renderOrders();
+      renderOldestOrder();
+    }
+  </script>
+</body>
+
+</html>
